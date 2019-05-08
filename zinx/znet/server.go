@@ -3,6 +3,7 @@ package znet
 import (
 	"ZINX_PRO/zinx/ziface"
 	"fmt"
+	"github.com/kataras/iris/core/errors"
 	"net"
 )
 
@@ -16,6 +17,17 @@ type Server struct {
 	IP string
 	// listen PORT
 	Port int
+}
+
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+	// 回显的业务
+	fmt.Println("[Conn Handle] CallbackToClient...")
+	if _, err := conn.Write(data[:cnt]); err != nil {
+		fmt.Println("write back buf err", err)
+		return errors.New("CallBackToClient error")
+	}
+
+	return nil
 }
 
 // 启动服务器
@@ -36,6 +48,8 @@ func (s *Server) Start() {
 			fmt.Println("listen ", s.IPVersion, " err ", err)
 			return
 		}
+		var cid uint32
+		cid = 0
 
 		fmt.Println("start Zinx server succ, ", s.Name, " succ , Listenning...")
 
@@ -48,27 +62,14 @@ func (s *Server) Start() {
 				continue
 			}
 
-			// 已经与客户端建立链接。
-			// 业务需求：最大512字节的回显业务
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := conn.Read(buf)
-					if err != nil {
-						fmt.Println("recv buf err ", err)
-						continue
-					}
+			// 使用 connections 模块
+			// connection 模块绑定 server
+			// 将处理新连接的业务方法和conn进行绑定，得到我们的链接模块
+			delConn := NewConnection(conn, cid, CallBackToClient)
+			cid++
 
-					// 打印信息，测试使用
-					fmt.Printf("recv client buf = %s, cnt = %d\n", buf[:cnt], cnt)
-
-					// 回显数据
-					if _, err := conn.Write(buf[:cnt]); err != nil {
-						fmt.Println("write back buf err ", err)
-						continue
-					}
-				}
-			}()
+			// 启动当前的连接业务处理
+			go delConn.Start()
 		}
 	}()
 
