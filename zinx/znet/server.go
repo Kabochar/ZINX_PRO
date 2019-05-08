@@ -3,7 +3,6 @@ package znet
 import (
 	"ZINX_PRO/zinx/ziface"
 	"fmt"
-	"github.com/kataras/iris/core/errors"
 	"net"
 )
 
@@ -17,17 +16,9 @@ type Server struct {
 	IP string
 	// listen PORT
 	Port int
-}
-
-func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-	// 回显的业务
-	fmt.Println("[Conn Handle] CallbackToClient...")
-	if _, err := conn.Write(data[:cnt]); err != nil {
-		fmt.Println("write back buf err", err)
-		return errors.New("CallBackToClient error")
-	}
-
-	return nil
+	// 给当前Server 由用户绑定的回调Router，也就是server 注册的链接对应的处理业务
+	// 当前只能存在一个
+	Router ziface.IRouter
 }
 
 // 启动服务器
@@ -62,10 +53,8 @@ func (s *Server) Start() {
 				continue
 			}
 
-			// 使用 connections 模块
-			// connection 模块绑定 server
-			// 将处理新连接的业务方法和conn进行绑定，得到我们的链接模块
-			delConn := NewConnection(conn, cid, CallBackToClient)
+			// 处理新连接业务方法 和 conn 进行绑定，得到我们的链接模块
+			delConn := NewConnection(conn, cid, s.Router)
 			cid++
 
 			// 启动当前的连接业务处理
@@ -90,6 +79,12 @@ func (s *Server) Serve() {
 	select {}
 }
 
+// 路由功能：给当前服务注册一个路由业务功能，供客户端链接处理使用
+func (s *Server) AddRouter(router ziface.IRouter) {
+	s.Router = router
+	fmt.Println("Add Router Succ!")
+}
+
 /*
 	初始化Server模块的方法
 */
@@ -99,6 +94,7 @@ func NewServer(name string) ziface.IServer {
 		IPVersion: "tcp4",
 		IP:        "0.0.0.0",
 		Port:      8999,
+		Router:    nil,
 	}
 
 	return server
