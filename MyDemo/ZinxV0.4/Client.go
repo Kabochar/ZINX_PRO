@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Client strat...")
+	fmt.Println("Client start...")
 
 	time.Sleep(1 * time.Second)
 

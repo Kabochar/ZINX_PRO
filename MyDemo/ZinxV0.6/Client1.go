@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Client start...")
+	fmt.Println("Client 1 strat...")
 
 	time.Sleep(1 * time.Second)
 
@@ -23,7 +23,7 @@ func main() {
 	for {
 		// 发送封包的message的消息
 		dp := znet.NewDataPack()
-		binaryMsg, err := dp.Pack(znet.NewMsgPackage(0, []byte("ZinxV0.5 client Test Message")))
+		binaryMsg, err := dp.Pack(znet.NewMsgPackage(1, []byte("Zinx client _1_ Test Message")))
 		if err != nil {
 			fmt.Println("Pack error:", err)
 			return
