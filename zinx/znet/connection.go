@@ -20,8 +20,10 @@ type Connection struct {
 	isClosed bool
 	//消息的管理MsgID 和对应的处理业务API关系
 	MsgHandler ziface.IMsgHandle
-	// 告知当前连接一斤推出/停止 channel
+	// 告知当前连接一斤推出/停止 channel.(由Reader告知Writer退出)
 	ExitChan chan bool
+	// 无缓冲管道，用于 读、写两个goroutine之间的通信
+	msgChan chan []byte
 }
 
 func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandle) *Connection {
@@ -31,6 +33,7 @@ func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandl
 		MsgHandler: msgHandler,
 		isClosed:   false,
 		ExitChan:   make(chan bool, 1),
+		msgChan:    make(chan []byte),
 	}
 
 	return c
@@ -38,20 +41,12 @@ func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandl
 
 // 连接的读业务方法
 func (c *Connection) StartReader() {
-	fmt.Println("Reader Goroutine is running..")
+	fmt.Println("[Reader Goroutine is running]")
 	defer fmt.Printf("ConnID: %v, Reader is exit, Remote Addr: %v \n",
 		c.ConnID, c.RemoteAddr().String())
 	defer c.Stop()
 
 	for {
-		// 读取客户端的数据到buf中，最大 512字节
-		//buf := make([]byte, utils.GlobalObject.MaxPackageSize)
-		//_, err := c.Conn.Read(buf)
-		//if err != nil {
-		//	fmt.Println("recv buf err", err)
-		//	continue
-		//}
-		// 创建一个拆包解包对象
 		dp := NewDataPack()
 		// 读取客户端msg head 二进制流前 8字节
 		headData := make([]byte, dp.GetHandLen())
@@ -90,6 +85,28 @@ func (c *Connection) StartReader() {
 	}
 }
 
+// 写消息goroutine，用户将数据发送给客户端
+func (c *Connection) StartWriter() {
+	fmt.Println("[Writer Goroutine is running]")
+	defer fmt.Println("[Writer exit!]", c.RemoteAddr().String())
+
+	// 不断堵塞等待chanel的消息，进行写给客户端
+	for {
+		select {
+		case data := <-c.msgChan:
+			// 有数据要写给客户端
+			if _, err := c.Conn.Write(data); err != nil {
+				fmt.Println("Send data errror, ", err)
+				return
+			}
+		case <-c.ExitChan:
+			// 代表reader已经退出，此时Writer也要退出
+			fmt.Println("[Reader exit!]", c.RemoteAddr().String())
+			return
+		}
+	}
+}
+
 // 启动链接，让当前连接开始工作
 func (c *Connection) Start() {
 	fmt.Println("Conn Start()... ConnID = ", c.ConnID)
@@ -97,7 +114,8 @@ func (c *Connection) Start() {
 	// 启动从当前连接的读数据业务
 	go c.StartReader()
 
-	// TODO 启动从当前连接写数的业务
+	// 启动从当前连接写数据的业务
+	go c.StartWriter()
 }
 
 // 停止连接，结束当前连接状态
@@ -112,6 +130,13 @@ func (c *Connection) Stop() {
 
 	// 关闭socket连接
 	c.Conn.Close()
+
+	// 告知Writer关闭
+	c.ExitChan <- true
+
+	// 回收资源
+	close(c.ExitChan)
+	close(c.msgChan)
 }
 
 // 从当前连接获取原始的 socket TCPConn
@@ -146,10 +171,8 @@ func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 		return errors.New("Pack err Msg")
 	}
 
-	if _, err := c.Conn.Write(binaryMsg); err != nil {
-		fmt.Println("Write msg id", msgID, "error: ", err)
-		return errors.New("conn Write err")
-	}
+	// 封包数据写进 msgChan 中
+	c.msgChan <- binaryMsg
 
 	return nil
 }
