@@ -22,9 +22,11 @@ type GlobalObj struct {
 	/*
 	   Zinx
 	*/
-	Version        string // 当前Zinx版本号
-	MaxPackageSize uint32 // 传输数据包的最大Size
-	MaxConn        int    // 当前服务器主机允许的最大链接个数
+	Version          string // 当前Zinx版本号
+	MaxPackageSize   uint32 // 传输数据包的最大Size
+	MaxConn          int    // 当前服务器主机允许的最大链接个数
+	WorkerPoolSize   uint32 // 当前业务工作Worker池的Goroutine数量
+	MaxWorkerTaskLen uint32 // Zinx 框架允许用户最多开辟多少个Worker
 }
 
 /*
@@ -52,12 +54,14 @@ func (g *GlobalObj) Reload() {
 */
 func init() {
 	GlobalObject = &GlobalObj{
-		Name:           "ZinxServerApp",
-		Version:        "V0.6",
-		TcpPort:        8999,
-		Host:           "0.0.0.0",
-		MaxConn:        15,
-		MaxPackageSize: 4096,
+		Name:             "ZinxServerApp",
+		Version:          "V0.6",
+		TcpPort:          8999,
+		Host:             "0.0.0.0",
+		MaxConn:          15,
+		MaxPackageSize:   4096,
+		WorkerPoolSize:   10,   // worker工作池的队列的个数
+		MaxWorkerTaskLen: 1024, // 每个worker对应的消息队列的数量最大值
 	}
 
 	// 从配置文件中加载用户配置参数
