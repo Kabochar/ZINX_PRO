@@ -46,10 +46,10 @@ func main() {
 		// 将二进制的head拆包到msg结构体重
 		msgHead, err := dp.Unpack(binaryHead)
 
-		if msgHead.GetMsgLen() > 0 {
+		if msgHead.GetDataLen() > 0 {
 			// 2 再根据datalen 进行第二次读取，将data 读出来
 			msg := msgHead.(*znet.Message)
-			msg.Data = make([]byte, msg.GetMsgLen())
+			msg.Data = make([]byte, msg.GetDataLen())
 
 			if _, err := io.ReadFull(conn, msg.Data); err != nil {
 				fmt.Println("read msg data err:", err)

@@ -69,8 +69,8 @@ func (c *Connection) StartReader() {
 
 		// 根据datalen 再次读取Data，放在 msg.Data中
 		var data []byte
-		if msg.GetMsgLen() > 0 {
-			data = make([]byte, msg.GetMsgLen())
+		if msg.GetDataLen() > 0 {
+			data = make([]byte, msg.GetDataLen())
 			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
 				fmt.Println("read msg data err:", err)
 				break
@@ -84,8 +84,8 @@ func (c *Connection) StartReader() {
 			msg:  msg,
 		}
 
-		//从路由中，找到注册绑定的Conn对应的router调用
-		//根据绑定好的MsgID 找到对应处理api业务 执行
+		// 从路由中，找到注册绑定的Conn对应的router调用
+		// 根据绑定好的MsgID 找到对应处理api业务 执行
 		go c.MsgHandler.DoMsgHandler(&req)
 	}
 }

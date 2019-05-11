@@ -5,7 +5,7 @@ package ziface
 	路由里的 IRequest 到包含用该链接的链接信息和该链接请求的数据信息
 */
 type IRouter interface {
-	PreHandle(request IRequest)  // 在处理conn业务之前的钩子方法
+	PreHandle(request IRequest)
 	Handle(request IRequest)     // 处理conn业务的方法
 	PostHandle(request IRequest) // 处理conn业务之后的钩子方法
 }

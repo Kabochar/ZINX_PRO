@@ -48,11 +48,11 @@ func TestNewDataPack(t *testing.T) {
 						return
 					}
 					// 判断包中是否有数据 data
-					if msgHead.GetMsgLen() > 0 {
+					if msgHead.GetDataLen() > 0 {
 						// msg 有数据，进行第二次读取
 						// 2 第二次从 conn 读，根据 head中的dataLen，再读取data 内容
 						msg := msgHead.(*Message)
-						msg.Data = make([]byte, msg.GetMsgLen())
+						msg.Data = make([]byte, msg.GetDataLen())
 
 						// 根据 datalen 的长度再次从 io 流中读取
 						_, err := io.ReadFull(conn, msg.Data)

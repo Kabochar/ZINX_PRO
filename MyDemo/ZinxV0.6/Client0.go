@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Client 0 start...")
+	fmt.Println("Client _0_ start...")
 
 	time.Sleep(1 * time.Second)
 
@@ -23,7 +23,7 @@ func main() {
 	for {
 		// 发送封包的message的消息
 		dp := znet.NewDataPack()
-		binaryMsg, err := dp.Pack(znet.NewMsgPackage(0, []byte("Zinx client _0_ Test Message")))
+		binaryMsg, err := dp.Pack(znet.NewMsgPackage(0, []byte("Zinx _0_ client Test Message")))
 		if err != nil {
 			fmt.Println("Pack error:", err)
 			return
@@ -46,17 +46,17 @@ func main() {
 		// 将二进制的head拆包到msg结构体重
 		msgHead, err := dp.Unpack(binaryHead)
 
-		if msgHead.GetMsgLen() > 0 {
+		if msgHead.GetDataLen() > 0 {
 			// 2 再根据datalen 进行第二次读取，将data 读出来
 			msg := msgHead.(*znet.Message)
-			msg.Data = make([]byte, msg.GetMsgLen())
+			msg.Data = make([]byte, msg.GetDataLen())
 
 			if _, err := io.ReadFull(conn, msg.Data); err != nil {
 				fmt.Println("read msg data err:", err)
 				return
 			}
 
-			fmt.Printf("---> Recv Server MsgID: %d, len: %d. Data: %s\n",
+			fmt.Printf("> Recv Server MsgID: %d, len: %d. Data: %s\n",
 				msg.ID, msg.DataLen, string(msg.Data))
 		}
 

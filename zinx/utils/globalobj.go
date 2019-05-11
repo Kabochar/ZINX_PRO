@@ -11,12 +11,18 @@ import (
 	一些参数也可以通过 用户根据 zinx.json 来配置
 */
 type GlobalObj struct {
+	/*
+		Server
+	*/
 	TcpServer ziface.IServer // 当前Zinx的全局Server对象
 	Host      string         // 当前服务器主机 IP
 	TcpPort   int            // 当前服务器主机监听端口号
 	Name      string         // 当前服务器名称
-	Version   string         // 当前Zinx版本号
 
+	/*
+	   Zinx
+	*/
+	Version        string // 当前Zinx版本号
 	MaxPackageSize uint32 // 传输数据包的最大Size
 	MaxConn        int    // 当前服务器主机允许的最大链接个数
 }
@@ -28,7 +34,7 @@ type GlobalObj struct {
 var GlobalObject *GlobalObj
 
 func (g *GlobalObj) Reload() {
-	data, err := ioutil.ReadFile("./conf/zinx.json")
+	data, err := ioutil.ReadFile("conf/zinx.json")
 	if err != nil {
 		panic(err)
 	}
@@ -47,10 +53,10 @@ func (g *GlobalObj) Reload() {
 func init() {
 	GlobalObject = &GlobalObj{
 		Name:           "ZinxServerApp",
-		Version:        "V0.4",
-		TcpPort:        7777,
+		Version:        "V0.6",
+		TcpPort:        8999,
 		Host:           "0.0.0.0",
-		MaxConn:        12000,
+		MaxConn:        15,
 		MaxPackageSize: 4096,
 	}
 
