@@ -13,6 +13,9 @@ import (
 连接模块
 */
 type Connection struct {
+	// 当前Conn属于哪个Server
+	// //当前conn属于哪个server，在conn初始化的时候添加即可
+	TcpServer ziface.IServer
 	// 从当前连接的 socket TCP 套接字
 	Conn *net.TCPConn
 	// 连接 ID
@@ -25,10 +28,12 @@ type Connection struct {
 	ExitChan chan bool
 	// 无缓冲管道，用于 读、写两个goroutine之间的通信
 	msgChan chan []byte
+	//
 }
 
-func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandle) *Connection {
+func NewConnection(server ziface.IServer, conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandle) *Connection {
 	c := &Connection{
+		TcpServer:  server, //将隶属的server传递进来
 		Conn:       conn,
 		ConnID:     connID,
 		MsgHandler: msgHandler,
@@ -36,6 +41,9 @@ func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandl
 		ExitChan:   make(chan bool, 1),
 		msgChan:    make(chan []byte),
 	}
+
+	// 将新创建的Conn添加到链接管理中
+	c.TcpServer.GetConnMgr().Add(c)
 
 	return c
 }
@@ -140,6 +148,9 @@ func (c *Connection) Stop() {
 
 	// 告知Writer关闭
 	c.ExitChan <- true
+
+	// 将当前conn从ConnMgr中摘除掉
+	c.TcpServer.GetConnMgr().Remove(c)
 
 	// 回收资源
 	close(c.ExitChan)

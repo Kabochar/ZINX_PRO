@@ -19,6 +19,8 @@ type Server struct {
 	Port int
 	//当前server的消息管理模块， 用来绑定MsgID和对应的处理业务API关系
 	MsgHandler ziface.IMsgHandle
+	// 当前Server的连接管理器
+	ConnMgr ziface.IConnManager
 }
 
 // 启动服务器
@@ -67,12 +69,20 @@ func (s *Server) Start() {
 				continue
 			}
 
+			// 设置最大连接个数的判断，如果超过最大连接，那么则关闭此新的连接
+			if s.ConnMgr.Len() >= utils.GlobalObject.MaxConn {
+				// TODO 给客户端相应一个超出最大连接的错课包
+				fmt.Println("[STOP] Zinx server , name ", s.Name)
+				conn.Close()
+				continue
+			}
+
 			// 处理新连接业务方法 和 conn 进行绑定，得到我们的链接模块
-			delConn := NewConnection(conn, cid, s.MsgHandler)
+			dealConn := NewConnection(s, conn, cid, s.MsgHandler)
 			cid++
 
 			// 启动当前的连接业务处理
-			go delConn.Start()
+			go dealConn.Start()
 		}
 	}()
 
@@ -109,7 +119,13 @@ func NewServer(name string) ziface.IServer {
 		IP:         utils.GlobalObject.Host,
 		Port:       utils.GlobalObject.TcpPort,
 		MsgHandler: NewMsgHandle(),
+		ConnMgr:    NewConnManager(),
 	}
 
 	return server
+}
+
+// 得到链接管理
+func (s *Server) GetConnMgr() ziface.IConnManager {
+	return s.ConnMgr
 }
