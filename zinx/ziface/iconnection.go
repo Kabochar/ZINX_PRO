@@ -16,6 +16,13 @@ type IConnection interface {
 	RemoteAddr() net.Addr
 	// 发送数据，将数据发送给远程的客户端.先封包，后发送
 	SendMsg(msgID uint32, data []byte) error
+
+	// 设置链接属性
+	SetProperty(key string, value interface{})
+	// 获取链接属性
+	GetProperty(key string) (interface{}, error)
+	// 移除链接属性
+	RemoveProperty(key string)
 }
 
 type HandFunc func(*net.TCPConn, []byte, int) error
